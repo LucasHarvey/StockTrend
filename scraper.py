@@ -14,7 +14,72 @@ import re
 path = "./intraQuarter"
 
 
-def key_stats(gather="Total Debt/Equity (mrq)"):
+def get_kpi_from_source(kpi, source_code):
+    try:
+        value = float(
+            source_code.split(kpi + ':</td><td class="yfnc_tabledata1">')[1].split(
+                "</td>"
+            )[0]
+        )
+        return value
+    except:
+        # Formatting changed
+        try:
+            value = float(
+                source_code.split(kpi + ':</td>\n<td class="yfnc_tabledata1">')[
+                    1
+                ].split("</td>")[0]
+            )
+            return value
+        except:
+            # Value is N/A
+            return False
+
+
+def get_sp500_value_at_date(unix_time, sp500_df):
+    try:
+        # Parse S&P 500 value for the given date
+        sp500_date = datetime.fromtimestamp(unix_time).strftime("%Y-%m-%d")
+        row = sp500_df[sp500_df["Date"] == sp500_date]
+        if len(row) == 0:
+            return False
+        sp500_value = float(row["Adj Close"])
+        return sp500_value
+    except:
+        # Look 3 days before if no data found
+        sp500_date = datetime.fromtimestamp(unix_time - 259200).strftime("%Y-%m-%d")
+        row = sp500_df[sp500_df["Date"] == sp500_date]
+        sp500_value = float(row["Adj Close"])
+        return sp500_value
+
+
+def get_stock_price(source_code):
+    try:
+        stock_price = float(
+            source_code.split("</small><big><b>")[1].split("</b></big>")[0]
+        )
+        return stock_price
+
+    except:
+        try:
+            stock_price = source_code.split("</small><big><b>")[1].split("</b></big>")[
+                0
+            ]
+
+            stock_price = re.search(r"(\d{1,8}\.\d{1,8})", stock_price)
+            stock_price = float(stock_price.group(1))
+            return stock_price
+        except:
+            # real-time ticker
+            stock_price = source_code.split('<span class="time_rtq_ticker">')[1].split(
+                "</span>"
+            )[0]
+            stock_price = re.search(r"(\d{1,8}\.\d{1,8})", stock_price)
+            stock_price = float(stock_price.group(1))
+            return stock_price
+
+
+def key_stats(kpi="Total Debt/Equity (mrq)"):
     stats_path = path + "/_KeyStats"
     stock_list = [stock[0] for stock in os.walk(stats_path)]
     stock_list = sorted(stock_list)
@@ -62,74 +127,28 @@ def key_stats(gather="Total Debt/Equity (mrq)"):
 
             try:
 
-                try:
-                    value = float(
-                        source_code.split(
-                            gather + ':</td><td class="yfnc_tabledata1">'
-                        )[1].split("</td>")[0]
-                    )
-                except:
-                    # Formatting changed
-                    try:
-                        value = float(
-                            source_code.split(
-                                gather + ':</td>\n<td class="yfnc_tabledata1">'
-                            )[1].split("</td>")[0]
-                        )
-                    except Exception as e:
-                        # Value is N/A
-                        pass
+                # Get the KPI value we are interested in
+                kpi_value = get_kpi_from_source(kpi, source_code)
 
-                try:
-                    # Parse S&P 500 value for the given date
-                    sp500_date = datetime.fromtimestamp(unix_time).strftime("%Y-%m-%d")
-                    row = sp500_df[sp500_df["Date"] == sp500_date]
-                    if len(row) == 0:
-                        continue
-                    sp500_value = float(row["Adj Close"])
-                except:
-                    # Look 3 days before if no data found
-                    sp500_date = datetime.fromtimestamp(unix_time - 259200).strftime(
-                        "%Y-%m-%d"
-                    )
-                    row = sp500_df[sp500_df["Date"] == sp500_date]
-                    sp500_value = float(row["Adj Close"])
+                # Get the SP500 value
+                sp500_value = get_sp500_value_at_date(unix_time, sp500_df)
+                if not sp500_value:
+                    continue
 
-                try:
-                    stock_price = float(
-                        source_code.split("</small><big><b>")[1].split("</b></big>")[0]
-                    )
+                stock_price = get_stock_price(source_code)
 
-                except:
-
-                    try:
-                        stock_price = source_code.split("</small><big><b>")[1].split(
-                            "</b></big>"
-                        )[0]
-
-                        stock_price = re.search(r"(\d{1,8}\.\d{1,8})", stock_price)
-                        stock_price = float(stock_price.group(1))
-                        # print(stock_price)
-                    except Exception as e:
-                        # real-time ticker
-                        stock_price = source_code.split(
-                            '<span class="time_rtq_ticker">'
-                        )[1].split("</span>")[0]
-                        stock_price = re.search(r"(\d{1,8}\.\d{1,8})", stock_price)
-                        stock_price = float(stock_price.group(1))
-                        # print("Latest:", stock_price)
-                        # print("stock price", str(e), ticker, stock_file)
-                        # time.sleep(15)
-
+                # Set initial values for starting prices
                 if not starting_stock_value:
                     starting_stock_value = stock_price
                 if not starting_sp500_value:
                     starting_sp500_value = sp500_value
 
+                # Calculate price change for stock
                 stock_p_change = (
                     (stock_price - starting_stock_value) / starting_stock_value
                 ) * 100
 
+                # Calculate price change for SP500
                 sp500_p_change = (
                     (sp500_value - starting_sp500_value) / starting_sp500_value
                 ) * 100
@@ -139,7 +158,7 @@ def key_stats(gather="Total Debt/Equity (mrq)"):
                         "Date": date_stamp,
                         "Unix": unix_time,
                         "Ticker": ticker,
-                        "DE Ratio": value,
+                        "DE Ratio": kpi_value,
                         "Price": stock_price,
                         "stock_p_change": stock_p_change,
                         "SP500": sp500_value,
@@ -151,18 +170,9 @@ def key_stats(gather="Total Debt/Equity (mrq)"):
 
             except Exception as e:
                 print(str(e))
-                # print(
-                #     "caught exception with ticker: ",
-                #     ticker,
-                #     "full file path: ",
-                #     full_file_path,
-                #     # "value: ",
-                #     # value,
-                #     # "row: ",
-                #     # row,
-                # )
                 pass
 
+    # Plot tickers
     for ticker in tickers:
         try:
             plot_df = df[df["Ticker"] == ticker]
@@ -175,8 +185,7 @@ def key_stats(gather="Total Debt/Equity (mrq)"):
     plt.show()
 
     save_path = (
-        gather.replace(" ", "").replace("(", "").replace(")", "").replace("/", "")
-        + ".csv"
+        kpi.replace(" ", "").replace("(", "").replace(")", "").replace("/", "") + ".csv"
     )
 
     df.to_csv(save_path)
