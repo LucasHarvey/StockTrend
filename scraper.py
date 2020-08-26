@@ -95,6 +95,7 @@ def key_stats(kpi="Total Debt/Equity (mrq)"):
             "SP500",
             "sp500_p_change",
             "Difference",
+            "Status",
         ]
     )
 
@@ -153,6 +154,13 @@ def key_stats(kpi="Total Debt/Equity (mrq)"):
                     (sp500_value - starting_sp500_value) / starting_sp500_value
                 ) * 100
 
+                difference = stock_p_change - sp500_p_change
+
+                if difference > 0:
+                    status = "outperform"
+                else:
+                    status = "underperform"
+
                 df = df.append(
                     {
                         "Date": date_stamp,
@@ -163,7 +171,8 @@ def key_stats(kpi="Total Debt/Equity (mrq)"):
                         "stock_p_change": stock_p_change,
                         "SP500": sp500_value,
                         "sp500_p_change": sp500_p_change,
-                        "Difference": stock_p_change - sp500_p_change,
+                        "Difference": difference,
+                        "Status": status,
                     },
                     ignore_index=True,
                 )
@@ -177,7 +186,14 @@ def key_stats(kpi="Total Debt/Equity (mrq)"):
         try:
             plot_df = df[df["Ticker"] == ticker]
             plot_df = plot_df.set_index(["Date"])
-            plot_df["Difference"].plot(label=ticker)
+
+            if plot_df["Status"][-1] == "underperform":
+                color = "r"
+            else:
+                color = "g"
+
+            plot_df["Difference"].plot(label=ticker, color=color)
+
             plt.legend()
         except:
             pass
