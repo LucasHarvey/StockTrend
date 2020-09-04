@@ -5,9 +5,14 @@ import time
 
 quandl.ApiConfig.api_key = "EBc8AqCWKJNbuzXRzVP_"
 
-# data = quandl.get("WIKI/KO", trim_start="2000-12-12", trim_end="2014-12-30")
+data = quandl.get("WIKI/KO", trim_start="2000-12-12", trim_end="2014-12-30")
 
-# print(data["Adj. Close"])
+df = pd.DataFrame()
+data["KO"] = data["Adj. Close"]
+# print(data)
+df = pd.concat([df, data["KO"]], axis=1)
+print(df)
+
 
 path = "./intraQuarter/"
 
@@ -22,11 +27,10 @@ def get_stock_price(ticker):
 def get_stock_prices():
     df = pd.DataFrame()
     stock_prices_path = path + "_KeyStats"
-    print(stock_prices_path)
     stocks = [x[0] for x in os.walk(stock_prices_path)]
     stocks = sorted(stocks)
 
-    for stock in stocks[1:10]:
+    for stock in stocks[1:]:
         ticker = stock.split("/")[3]
         print(ticker)
         try:
@@ -46,4 +50,4 @@ def get_stock_prices():
     df.to_csv("stock_prices.csv")
 
 
-get_stock_prices()
+# get_stock_prices()
