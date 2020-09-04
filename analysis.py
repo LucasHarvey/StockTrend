@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from sklearn import svm, preprocessing
 import pandas as pd
 from matplotlib import style
+import quandl
 
 style.use("ggplot")
 
