@@ -47,7 +47,8 @@ FEATURES = [
 
 
 def build_data_set():
-    data_df = pd.read_csv("key_stats.csv")
+    # data_df = pd.read_csv("key_stats.csv")
+    data_df = pd.read_csv("key_stats_acc_perf_NO_NA.csv")
 
     data_df = data_df.reindex(np.random.permutation(data_df.index))
 
