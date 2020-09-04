@@ -48,6 +48,8 @@ FEATURES = [
 def build_data_set():
     data_df = pd.read_csv("key_stats.csv")
 
+    data_df = data_df.reindex(np.random.permutation(data_df.index))
+
     # data_df = data_df[:50]
 
     X = np.array(data_df[FEATURES].values.tolist())
@@ -70,7 +72,7 @@ def analysis():
 
     print("dataset size: ", len(X))
 
-    test_size = 500
+    test_size = 1000
 
     training_X = X[:-test_size]
     training_y = y[:-test_size]
