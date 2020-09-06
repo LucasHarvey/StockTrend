@@ -260,7 +260,7 @@ def key_stats(
                     (sp500_1y_value - sp500_value) / sp500_value * 100, 2
                 )
 
-                difference = stock_p_change - sp500_p_change
+                difference = round(stock_p_change - sp500_p_change, 2)
 
                 if difference > 0:
                     status = "outperform"
@@ -268,7 +268,7 @@ def key_stats(
                     status = "underperform"
 
                 # Do not use stock if we have N/A values
-                if kpi_values.count("N/A") > 0:
+                if kpi_values.count("N/A") > 15:
                     pass
                 else:
 
@@ -346,7 +346,7 @@ def key_stats(
 
     # plt.show()
 
-    df.to_csv("key_stats_acc_perf_NO_NA.csv")
+    df.to_csv("key_stats_acc_perf_WITH_NA.csv")
 
 
 key_stats()

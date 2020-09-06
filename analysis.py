@@ -48,13 +48,15 @@ FEATURES = [
 
 def build_data_set():
     # data_df = pd.read_csv("key_stats.csv")
-    data_df = pd.read_csv("key_stats_acc_perf_NO_NA.csv")
+    data_df = pd.read_csv("key_stats_acc_perf_WITH_NA.csv")
 
     data_df = data_df.reindex(np.random.permutation(data_df.index))
+    # data_df = data_df.replace("NaN", 0).replace("N/A", 0)
 
     # data_df = data_df[:50]
 
     X = np.array(data_df[FEATURES].values.tolist())
+    X = np.nan_to_num(X)
     y = (
         data_df["Status"]
         .replace("underperform", 0)
