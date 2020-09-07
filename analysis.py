@@ -4,6 +4,7 @@ from sklearn import svm, preprocessing
 import pandas as pd
 from matplotlib import style
 import quandl
+import statistics
 
 style.use("ggplot")
 
@@ -66,22 +67,30 @@ def build_data_set():
     # Normalization
     X = preprocessing.scale(X)
 
-    return X, y
+    Z = np.array(data_df[["stock_p_change", "sp500_p_change"]])
+
+    return X, y, Z
 
 
 def analysis():
 
-    X, y = build_data_set()
+    X, y, Z = build_data_set()
 
     print("dataset size: ", len(X))
 
     test_size = 1000
+
+    invest_amount = 10000
+    total_invests = 0
+    market_returns = 0
+    strat_returns = 0
 
     training_X = X[:-test_size]
     training_y = y[:-test_size]
 
     test_X = X[-test_size:]
     test_y = y[-test_size:]
+    test_Z = Z[-test_size:]
 
     clf = svm.SVC(kernel="linear", C=1.0)
     clf.fit(training_X, training_y)
@@ -90,11 +99,37 @@ def analysis():
 
     correct_count = 0
     for i in range(0, test_size):
-        if clf.predict(test_X[i].reshape(1, -1))[0] == test_y[i]:
+        prediction = clf.predict(test_X[i].reshape(1, -1))[0]
+        if prediction == test_y[i]:
             correct_count += 1
+        if prediction == 1:
+            # Make investment
+            stock_change = Z[i][0] / 100
+            strat_return = invest_amount + invest_amount * stock_change
+            strat_returns += strat_return
+
+            # Invest in market
+            sp500_change = Z[i][1] / 100
+            market_return = invest_amount + invest_amount * sp500_change
+            market_returns += market_return
+
+            total_invests += 1
 
     print("Accuracy:", (correct_count / test_size) * 100)
 
+    print("Total Trades:", total_invests)
+    print("Returns From Strategy:", strat_returns)
+    print("Returns From Market:", market_returns)
+
+    compared = (strat_returns - market_returns) / market_returns * 100
+    no_investments = total_invests * invest_amount
+
+    avg_market_returns = (market_returns - no_investments) / no_investments * 100
+    avg_strat_returns = (strat_returns - no_investments) / no_investments * 100
+
+    print(str(compared), "% earned compared to market")
+    print("Average investment return:", str(avg_strat_returns), "%")
+    print("Average market return:", str(avg_market_returns), "%")
     # Graph
 
     # w = clf.coef_[0]
@@ -113,3 +148,8 @@ def analysis():
 
 
 analysis()
+
+# COMMENTS ON STRATEGY
+# - Does not take into account companies that are no longer in the S&P500 between in 2013
+#   * These companies can weigh down the index up until 2013, but we don't invest in them
+# - Instead of basing our results on model accuracy, we look at strategy performance compared to the market
