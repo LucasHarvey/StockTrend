@@ -7,8 +7,11 @@ import quandl
 import statistics
 from datetime import datetime
 import os
+from collections import Counter
 
 style.use("ggplot")
+
+outperformance_percent = 10
 
 FEATURES = [
     "DE Ratio",
@@ -49,6 +52,11 @@ FEATURES = [
 ]
 
 
+def calculate_status(stock, sp500):
+    diff = stock - sp500
+    return 1 if diff > outperformance_percent else 0
+
+
 def build_data_set():
     # data_df = pd.read_csv("key_stats.csv")
     data_df = pd.read_csv("key_stats_acc_perf_WITH_NA_enhanced.csv")
@@ -56,10 +64,12 @@ def build_data_set():
     data_df = data_df.reindex(np.random.permutation(data_df.index))
     data_df = data_df.fillna(0)
 
-    # data_df = data_df[:50]
+    data_df["Status2"] = list(
+        map(calculate_status, data_df["stock_p_change"], data_df["sp500_p_change"])
+    )
 
     X = np.array(data_df[FEATURES].values.tolist())
-    y = data_df["Status"].values.tolist()
+    y = data_df["Status2"].values.tolist()
 
     # Normalization
     X = preprocessing.scale(X)
@@ -90,8 +100,12 @@ def analysis():
     test_y = y[-test_size:]
     test_Z = Z[-test_size:]
 
+    print("begin training...")
+
     clf = svm.SVC(kernel="linear", C=1.0)
     clf.fit(training_X, training_y)
+
+    print("done training!")
 
     # Testing
 
@@ -155,8 +169,25 @@ def analysis():
             print(stock)
             investments.append(stock)
 
-    print("Total Investments:", len(investments))
-    print("Investments:", investments)
+    # print("Total Investments:", len(investments))
+    # print("Investments:", investments)
+    return investments
+
+
+potential_investments = []
+iterations = 5
+
+for x in range(iterations):
+    investments = analysis()
+    print(investments)
+    for investment in investments:
+        potential_investments.append(investment)
+
+count = Counter(potential_investments)
+
+for investment in count:
+    if count[investment] > iterations * 2 / 3:
+        print(investment)
 
 
 analysis()
