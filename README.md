@@ -1,6 +1,6 @@
 # StockTrend
 
-StockTrend is a project that uses fundamental data about companies (e.g. P/E ratio, D/E ratio, etc.) and machine learning to predict whether a company will outperform or underperform the S&P 500. 
+StockTrend uses fundamental data about companies (e.g. P/E ratio, D/E ratio, etc.) and machine learning to predict whether a company will outperform or underperform the S&P 500. 
 
 - Data scraped from Yahoo! Finance from 2003-2013
 - Data parsed into a pandas dataframe
