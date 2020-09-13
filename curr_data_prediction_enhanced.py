@@ -147,7 +147,9 @@ def analysis():
     today_path = os.path.join("./current_stats", today)
     if not os.path.exists(today_path):
         print("Data Not Found For Date:", today)
-        return
+        return []
+    else:
+        print("Making prediction for date:", today)
 
     data_path = os.path.join(today_path, "compiled_stats_WITH_NA.csv")
     data_df = pd.read_csv(data_path)
@@ -166,7 +168,7 @@ def analysis():
         p = clf.predict(X[i].reshape(1, -1))[0]
         if p == 1:
             stock = Z[i]
-            print(stock)
+            # print(stock)
             investments.append(stock)
 
     # print("Total Investments:", len(investments))
@@ -179,18 +181,20 @@ iterations = 5
 
 for x in range(iterations):
     investments = analysis()
-    print(investments)
+    # print(investments)
     for investment in investments:
         potential_investments.append(investment)
 
 count = Counter(potential_investments)
 
+final_investments = []
 for investment in count:
     if count[investment] > iterations * 2 / 3:
-        print(investment)
+        final_investments.append(investment)
 
+print(final_investments)
 
-analysis()
+# analysis()
 
 # COMMENTS ON STRATEGY
 # - Does not take into account companies that are no longer in the S&P500 between in 2013
